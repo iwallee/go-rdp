@@ -11,7 +11,7 @@ type RDPConn struct {
 	Addr RDPAddr
 }
 
-func (c *RDPConn) ok() bool { return c.Sock != RDPSOCKET(INVALID_SOCK) }
+func (c *RDPConn) ok() bool { return c.Sock > 0 }
 
 // Implementation of the Conn interface.
 

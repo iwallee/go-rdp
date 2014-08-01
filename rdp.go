@@ -6,6 +6,10 @@ package rdp
 
 import (
 	"unsafe"
+	"syscall"
+	"strings"
+	"strconv"
+	"net"
 )
 
 //EPOLLOPT
@@ -92,61 +96,13 @@ type PerfMon struct {
 	byteAvailRcvBuf     int32   // available RDP receiver buffer size
 }
 
-const (
-	SUCCESS      = 0
-	ECONNSETUP   = -1000
-	ENOSERVER    = -1001
-	ECONNREJ     = -1002
-	ESOCKFAIL    = -1003
-	ESECFAIL     = -1004
-	ECONNFAIL    = -2000
-	ECONNLOST    = -2001
-	ENOCONN      = -2002
-	ERESOURCE    = -3000
-	ETHREAD      = -3001
-	ENOBUF       = -3002
-	EFILE        = -4000
-	EINVRDOFF    = -4001
-	ERDPERM      = -4002
-	EINVWROFF    = -4003
-	EWRPERM      = -4004
-	EINVOP       = -5000
-	EBOUNDSOCK   = -5001
-	ECONNSOCK    = -5002
-	EINVPARAM    = -5003
-	EINVSOCK     = -5004
-	EUNBOUNDSOCK = -5005
-	ENOLISTEN    = -5006
-	ERDVNOSERV   = -5007
-	ERDVUNBOUND  = -5008
-	ESTREAMILL   = -5009
-	EDGRAMILL    = -5010
-	EDUPLISTEN   = -5011
-	ELARGEMSG    = -5012
-	EINVPOLLID   = -5013
-	EASYNCFAIL   = -6000
-	EASYNCSND    = -6001
-	EASYNCRCV    = -6002
-	ETIMEOUT     = -6003
-	EPEERERR     = -7000
-	EUNKNOWN     = -1
-)
 
-type SOCKET struct {
-	sock     int32
-	af       int32
-	socktype int32
-}
+
 
 type SYSSOCKET int32
 type RDPSOCKET int32
 type UDPSOCKET SYSSOCKET
 
-const (
-	INVALID_SOCK  int32 = -1
-	ERROR         int32 = -1
-	EXCEPTION     int32 = -2
-)
 
 func RDP_startup() (int32, error) {
 	r, _, _ := _startup.Call()
@@ -156,16 +112,14 @@ func RDP_cleanup() (int32, error) {
 	r, _, _ := _cleanup.Call()
 	return int32(r), nil
 }
-func RDP_socket(af int32, socktype int32, protocol int32) (RDPSOCKET, error) {
-	r, _, _ := _socket.Call(uintptr(af),
-		uintptr(socktype),
-		uintptr(protocol))
+func RDP_socket(af int32) (RDPSOCKET, error) {
+	r, _, _ := _socket.Call(uintptr(af))
 	return RDPSOCKET(r), nil
 }
-func RDP_bind(u RDPSOCKET, addr *RDPAddr) (int32, error) {
+func RDP_bind(u RDPSOCKET, af int32, addr *RDPAddr) (int32, error) {
 	r, _, _ := _bind.Call(uintptr(u),
+		uintptr(af),
 		uintptr(unsafe.Pointer(&addr.IP[0])),
-		uintptr(len(addr.IP)),
 		uintptr(addr.Port))
 	return int32(r), nil
 }
@@ -179,15 +133,33 @@ func RDP_listen(u RDPSOCKET, backlog int) (int32, error) {
 		uintptr(backlog))
 	return int32(r), nil
 }
-func RDP_accept(u RDPSOCKET, addr *RDPAddr) (RDPSOCKET, error) {
+func RDP_accept(u RDPSOCKET, af int32, addr *RDPAddr) (RDPSOCKET, error) {
+	var ip [64]byte
+	len := len(ip)
 	r, _, _ := _accept.Call(uintptr(u),
-		uintptr(unsafe.Pointer(&addr.IP[0])),
-		uintptr(len(addr.IP)),
+		uintptr(af),
+		uintptr(unsafe.Pointer(&ip[0])),
+		uintptr(unsafe.Pointer(&len)),
 		uintptr(unsafe.Pointer(&addr.Port)))
+	if RDPSOCKET(r) >= 0{
+		if af == syscall.AF_INET {
+			what := strings.Split(string(ip[:len]), ".")
+			i0 ,_ := strconv.Atoi(what[0])
+			i1 ,_ := strconv.Atoi(what[1])
+			i2 ,_ := strconv.Atoi(what[2])
+			i3 ,_ := strconv.Atoi(what[3])
+			addr.IP = net.IPv4(byte(i0),byte(i1), byte(i2), byte(i3))
+		} else if af == syscall.AF_INET6{
+			addr.IP, addr.Zone = parseIPv6(string(addr.IP), true)
+		}
+	}
+
+
 	return RDPSOCKET(r), nil
 }
-func RDP_connect(u RDPSOCKET, addr *RDPAddr) (int32, error) {
+func RDP_connect(u RDPSOCKET, af int32, addr *RDPAddr) (int32, error) {
 	r, _, _ := _connect.Call(uintptr(u),
+		uintptr(af),
 		uintptr(unsafe.Pointer(&addr.IP[0])),
 		uintptr(len(addr.IP)),
 		uintptr(addr.Port))
@@ -197,18 +169,48 @@ func RDP_close(u RDPSOCKET) (int32, error) {
 	r, _, _ := _close.Call(uintptr(u))
 	return int32(r), nil
 }
-func RDP_getpeername(u RDPSOCKET, addr *RDPAddr) (int32, error) {
+func RDP_getpeername(u RDPSOCKET, af int32, addr *RDPAddr) (int32, error) {
+	var ip [64]byte
+	len := len(ip)
 	r, _, _ := _getpeername.Call(uintptr(u),
+		uintptr(af),
 		uintptr(unsafe.Pointer(&addr.IP[0])),
-		uintptr(len(addr.IP)),
+		uintptr(unsafe.Pointer(&len)),
 		uintptr(unsafe.Pointer(&addr.Port)))
+	if RDPSOCKET(r) >= 0{
+		if af == syscall.AF_INET {
+			what := strings.Split(string(ip[:len]), ".")
+			i0 ,_ := strconv.Atoi(what[0])
+			i1 ,_ := strconv.Atoi(what[1])
+			i2 ,_ := strconv.Atoi(what[2])
+			i3 ,_ := strconv.Atoi(what[3])
+			addr.IP = net.IPv4(byte(i0),byte(i1), byte(i2), byte(i3))
+		} else if af == syscall.AF_INET6{
+			addr.IP, addr.Zone = parseIPv6(string(addr.IP), true)
+		}
+	}
 	return int32(r), nil
 }
-func RDP_getsockname(u RDPSOCKET, addr *RDPAddr) (int32, error) {
+func RDP_getsockname(u RDPSOCKET, af int32, addr *RDPAddr) (int32, error) {
+	var ip [64]byte
+	len := len(ip)
 	r, _, _ := _getsockname.Call(uintptr(u),
+		uintptr(af),
 		uintptr(unsafe.Pointer(&addr.IP[0])),
-		uintptr(len(addr.IP)),
+		uintptr(unsafe.Pointer(&len)),
 		uintptr(unsafe.Pointer(&addr.Port)))
+	if RDPSOCKET(r) >= 0{
+		if af == syscall.AF_INET {
+			what := strings.Split(string(ip[:len]), ".")
+			i0 ,_ := strconv.Atoi(what[0])
+			i1 ,_ := strconv.Atoi(what[1])
+			i2 ,_ := strconv.Atoi(what[2])
+			i3 ,_ := strconv.Atoi(what[3])
+			addr.IP = net.IPv4(byte(i0),byte(i1), byte(i2), byte(i3))
+		} else if af == syscall.AF_INET6{
+			addr.IP, addr.Zone = parseIPv6(string(addr.IP), true)
+		}
+	}
 	return int32(r), nil
 }
 func RDP_getsockopt(u RDPSOCKET, level int32, optname int32, optval interface{}, optlen int32) (int32, error) {
@@ -290,6 +292,20 @@ func RDP_epoll_wait(eid int32,
 func RDP_epoll_release(eid int32) (int32, error) {
 	r, _, _ := _epoll_release.Call(uintptr(eid))
 	return int32(r), nil
+}
+func RDP_geterrordesc()(int32, error){
+	//r, _, _ := _geterrordesc.Call()
+	//return int32(r), nil
+	return 0, nil
+}
+func RDP_getsystemerror()(int32, error){
+	r, _, _ := _getsystemerror.Call()
+	return int32(r), nil
+}
+func RDP_getsystemerrordesc()(int32, error){
+	//r, _, _ := _geterrordesc.Call()
+	//return int32(r), nil
+	return 0, nil
 }
 func RDP_perfmon(u *RDPSOCKET, perf *PerfMon, clear bool/*=true*/) (int32, error) {
 	return 0, nil

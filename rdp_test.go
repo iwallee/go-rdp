@@ -1,4 +1,4 @@
-package udt
+package rdp
 
 import (
 	"testing"
@@ -9,30 +9,30 @@ import (
 
 func TestRun(t *testing.T) {
 	log.Println("udt server start")
-	n, _ := UDT_startup()
+	n, _ := RDP_startup()
 	log.Println(n)
 
-	s, _ := UDT_socket(syscall.AF_INET, syscall.SOCK_STREAM, 0)
+	s, _ := RDP_socket(syscall.AF_INET, syscall.SOCK_STREAM, 0)
 	log.Println(n)
 
-	addr := UDTAddr {
+	addr := RDPAddr {
 		IP: net.IPv4(0, 0, 0, 0),
 		Port: 8389,
 	}
 
-	_, _ = UDT_bind(s, &addr)
+	_, _ = RDP_bind(s, &addr)
 	log.Println(n)
 
-	_, _ = UDT_listen(s, 10)
+	_, _ = RDP_listen(s, 10)
 	log.Println(n)
 
 	for {
-		remote := UDTAddr {
+		remote := RDPAddr {
 			IP: net.IPv4(0, 0, 0, 0),
 			Port: 0,
 		};
-		r, _ := UDT_accept(s, &remote)
-		if r == UDTSOCKET(INVALID_SOCK) {
+		r, _ := RDP_accept(s, &remote)
+		if r == RDPSOCKET(INVALID_SOCK) {
 			break
 		}
 	}

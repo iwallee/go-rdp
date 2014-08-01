@@ -1,19 +1,19 @@
-package udt
+package rdp
 
 import (
 	"net"
 )
 
-type UDTAddr struct {
+type RDPAddr struct {
 	IP   net.IP
 	Port int
 	Zone string // IPv6 scoped addressing zone
 }
 
 // Network returns the address's network name, "udt".
-func (a *UDTAddr) Network() string { return "udt" }
+func (a *RDPAddr) Network() string { return "udt" }
 
-func (a *UDTAddr) String() string {
+func (a *RDPAddr) String() string {
 	if a == nil {
 		return "<nil>"
 	}
@@ -24,7 +24,7 @@ func (a *UDTAddr) String() string {
 	return net.JoinHostPort(ip, itoa(a.Port))
 }
 
-func (a *UDTAddr) toAddr() net.Addr {
+func (a *RDPAddr) toAddr() net.Addr {
 	if a == nil {
 		return nil
 	}

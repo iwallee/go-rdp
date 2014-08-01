@@ -1,4 +1,4 @@
-package udt
+package rdp
 
 import (
 	"syscall"
@@ -6,44 +6,44 @@ import (
 	"time"
 )
 
-type UDTConn struct {
-	Sock UDTSOCKET
-	Addr UDTAddr
+type RDPConn struct {
+	Sock RDPSOCKET
+	Addr RDPAddr
 }
 
-func (c *UDTConn) ok() bool { return c.Sock != UDTSOCKET(INVALID_SOCK) }
+func (c *RDPConn) ok() bool { return c.Sock != RDPSOCKET(INVALID_SOCK) }
 
 // Implementation of the Conn interface.
 
 // Read implements the Conn Read method.
-func (c *UDTConn) Read(b []byte) (int, error) {
+func (c *RDPConn) Read(b []byte) (int, error) {
 	if !c.ok() {
 		return 0, syscall.EINVAL
 	}
-	n, err := UDT_recvmsg(c.Sock, b)
+	n, err := RDP_recvmsg(c.Sock, b)
 	return int(n), err
 }
 
 // Write implements the Conn Write method.
-func (c *UDTConn) Write(b []byte) (int, error) {
+func (c *RDPConn) Write(b []byte) (int, error) {
 	if !c.ok() {
 		return 0, syscall.EINVAL
 	}
-	n, err := UDT_sendmsg(c.Sock, b, 32, false)
+	n, err := RDP_sendmsg(c.Sock, b, 32, false)
 	return int(n), err
 }
 
 // Close closes the connection.
-func (c *UDTConn) Close() error {
+func (c *RDPConn) Close() error {
 	if !c.ok() {
 		return syscall.EINVAL
 	}
-	_, err := UDT_close(c.Sock)
+	_, err := RDP_close(c.Sock)
 	return err
 }
 
 // LocalAddr returns the local network address.
-func (c *UDTConn) LocalAddr() net.Addr {
+func (c *RDPConn) LocalAddr() net.Addr {
 	if !c.ok() {
 		return nil
 	}
@@ -51,7 +51,7 @@ func (c *UDTConn) LocalAddr() net.Addr {
 }
 
 // RemoteAddr returns the remote network address.
-func (c *UDTConn) RemoteAddr() net.Addr {
+func (c *RDPConn) RemoteAddr() net.Addr {
 	if !c.ok() {
 		return nil
 	}
@@ -59,7 +59,7 @@ func (c *UDTConn) RemoteAddr() net.Addr {
 }
 
 // SetDeadline implements the Conn SetDeadline method.
-func (c *UDTConn) SetDeadline(t time.Time) error {
+func (c *RDPConn) SetDeadline(t time.Time) error {
 	if !c.ok() {
 		return syscall.EINVAL
 	}
@@ -67,7 +67,7 @@ func (c *UDTConn) SetDeadline(t time.Time) error {
 }
 
 // SetReadDeadline implements the Conn SetReadDeadline method.
-func (c *UDTConn) SetReadDeadline(t time.Time) error {
+func (c *RDPConn) SetReadDeadline(t time.Time) error {
 	if !c.ok() {
 		return syscall.EINVAL
 	}
@@ -75,7 +75,7 @@ func (c *UDTConn) SetReadDeadline(t time.Time) error {
 }
 
 // SetWriteDeadline implements the Conn SetWriteDeadline method.
-func (c *UDTConn) SetWriteDeadline(t time.Time) error {
+func (c *RDPConn) SetWriteDeadline(t time.Time) error {
 	if !c.ok() {
 		return syscall.EINVAL
 	}
@@ -84,7 +84,7 @@ func (c *UDTConn) SetWriteDeadline(t time.Time) error {
 
 // SetReadBuffer sets the size of the operating system's
 // receive buffer associated with the connection.
-func (c *UDTConn) SetReadBuffer(bytes int) error {
+func (c *RDPConn) SetReadBuffer(bytes int) error {
 	if !c.ok() {
 		return syscall.EINVAL
 	}
@@ -93,7 +93,7 @@ func (c *UDTConn) SetReadBuffer(bytes int) error {
 
 // SetWriteBuffer sets the size of the operating system's
 // transmit buffer associated with the connection.
-func (c *UDTConn) SetWriteBuffer(bytes int) error {
+func (c *RDPConn) SetWriteBuffer(bytes int) error {
 	if !c.ok() {
 		return syscall.EINVAL
 	}

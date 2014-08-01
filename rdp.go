@@ -223,18 +223,6 @@ func RDP_setsockopt(u RDPSOCKET, level int32, optname int32, optval interface{},
 		uintptr(optlen))
 	return int32(r), nil
 }
-func RDP_send(u RDPSOCKET, buf[]byte, flags int32) (int32, error) {
-	r, _, _ := _send.Call(uintptr(u),
-		uintptr(unsafe.Pointer(&buf[0])),
-		uintptr(len(buf)), uintptr(flags))
-	return int32(r), nil
-}
-func RDP_recv(u RDPSOCKET, buf[]byte, flags int32) (int32, error) {
-	r, _, _ := _recv.Call(uintptr(u),
-		uintptr(unsafe.Pointer(&buf[0])),
-		uintptr(len(buf)), uintptr(flags))
-	return int32(r), nil
-}
 func RDP_sendmsg(u RDPSOCKET, buf[]byte, ttl int32, inorder bool) (int32, error) {
 	var _inorder int
 	if inorder {
@@ -253,24 +241,6 @@ func RDP_recvmsg(u RDPSOCKET, buf[]byte) (int32, error) {
 		uintptr(unsafe.Pointer(&buf[0])),
 		uintptr(len(buf)))
 	return int32(r), nil
-}
-func RDP_sendfile2(u RDPSOCKET, path string, offset *int64, size int64, block /*=364000*/int32) (int64, error) {
-	s := C.CString(path)
-	r, _, _ := _sendfile2.Call(uintptr(u),
-		uintptr(unsafe.Pointer(s)),
-		uintptr(unsafe.Pointer(offset)),
-		uintptr(size),
-		uintptr(block))
-	return int64(r), nil
-}
-func RDP_recvfile2(u RDPSOCKET, path string, offset *int64, size int64, block /*=7280000*/int32) (int64, error) {
-	s := C.CString(path)
-	r, _, _ := _recvfile2.Call(uintptr(u),
-		uintptr(unsafe.Pointer(s)),
-		uintptr(unsafe.Pointer(offset)),
-		uintptr(size),
-		uintptr(block))
-	return int64(r), nil
 }
 func RDP_epoll_create() (int32, error) {
 	r, _, err := _epoll_create.Call()
@@ -298,13 +268,13 @@ func RDP_epoll_remove_ssock(eid int32 , s SYSSOCKET) (int32, error) {
 		uintptr(s))
 	return int32(r), nil
 }
-func RDP_epoll_wait2(eid int32,
+func RDP_epoll_wait(eid int32,
 	readfds []RDPSOCKET, rnum* int32,
 	writefds []RDPSOCKET, wnum *int32,
 	msTimeOut int64,
 	lrfds []SYSSOCKET/*=nil*/, lrnum *int32,
 	lwfds []SYSSOCKET/*=nil*/, lwnum *int32) (int32, error) {
-	r, _, _ := _epoll_wait2.Call(uintptr(eid),
+	r, _, _ := _epoll_wait.Call(uintptr(eid),
 		uintptr(unsafe.Pointer(&readfds[0])),
 		uintptr(unsafe.Pointer(rnum)),
 		uintptr(unsafe.Pointer(&writefds[0])),
@@ -321,9 +291,6 @@ func RDP_epoll_release(eid int32) (int32, error) {
 	r, _, _ := _epoll_release.Call(uintptr(eid))
 	return int32(r), nil
 }
-func RDP_getlasterror() *RDPException {
-	return nil
-}
 func RDP_perfmon(u *RDPSOCKET, perf *PerfMon, clear bool/*=true*/) (int32, error) {
 	return 0, nil
 }
@@ -332,19 +299,8 @@ func RDP_getsockstate(u RDPSOCKET) (int32, error) {
 	return int32(r), nil
 }
 
-type RDPException struct {
 
-}
 
-func (self *RDPException) GetErrorMessage() (string) {
-	return ""
-}
-func (self *RDPException) GetErrorCode() (int) {
-	return 0
-}
-func (self *RDPException) Clear() {
-
-}
 
 func init() {
 	RDP_startup()

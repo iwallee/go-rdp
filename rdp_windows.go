@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	rdpDll = syscall.NewLazyDLL("C:/Develop/code/iwallee/kara/src/rdp/rdp4/win/bin/bin/rdpd.dll")
+	rdpDll = syscall.NewLazyDLL("rdpx64d.dll")
 )
 var (
 	_startup = rdpDll.NewProc("rdp_startup")

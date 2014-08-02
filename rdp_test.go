@@ -8,11 +8,11 @@ import (
 )
 
 func TestRun(t *testing.T) {
-	log.Println("udt server start")
+	log.Println("rdp server start")
 	n, _ := RDP_startup()
 	log.Println(n)
 
-	s, _ := RDP_socket(syscall.AF_INET, syscall.SOCK_STREAM, 0)
+	s, _ := RDP_socket(syscall.AF_INET)
 	log.Println(n)
 
 	addr := RDPAddr {
@@ -20,23 +20,20 @@ func TestRun(t *testing.T) {
 		Port: 8389,
 	}
 
-	_, _ = RDP_bind(s, &addr)
+	_, _ = RDP_bind(s, syscall.AF_INET, &addr)
 	log.Println(n)
 
 	_, _ = RDP_listen(s, 10)
 	log.Println(n)
 
 	for {
-		remote := RDPAddr {
-			IP: net.IPv4(0, 0, 0, 0),
-			Port: 0,
-		};
-		r, _ := RDP_accept(s, &remote)
-		if r == RDPSOCKET(INVALID_SOCK) {
+		r, remote, _ := RDP_accept(s, syscall.AF_INET)
+		if r < 0 {
 			break
 		}
+		log.Println("accept", r, remote)
 	}
-	log.Println("udt server stop")
+	log.Println("rdp server stop")
 }
 
 

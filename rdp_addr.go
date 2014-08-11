@@ -11,7 +11,7 @@ type RDPAddr struct {
 }
 
 // Network returns the address's network name, "udt".
-func (a *RDPAddr) Network() string { return "udt" }
+func (a *RDPAddr) Network() string { return "rdp" }
 
 func (a *RDPAddr) String() string {
 	if a == nil {

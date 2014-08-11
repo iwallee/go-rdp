@@ -1,134 +1,156 @@
-#ifndef __RDP_DEF_H__
-#define __RDP_DEF_H__
+#ifndef RDPDEF_H
+#define RDPDEF_H
 
-#if !defined(WIN32) && !defined(WIN64)
-#include <sys/types.h>
-#else
-#ifdef __MINGW__
-#include <stdint.h>
-#endif
-#include <windows.h>
-#endif
+#include "lint.h"
 
-////////////////////////////////////////////////////////////////////////////////
+#define RDP_SDK_VERSION 0x00010001
+#define RDP_VERSION "0.1.0.1"
 
-//if compiling on VC6.0 or pre-WindowsXP systems
-//use -DLEGACY_WIN32
+//传入 (in_come)  :接收外部连接请求(服务器角色)
+//传出 (out_come) :主动连接外部(客户端角色)
+//rdp socket 可以同时支持in_come 和 out_come,即同时做服务器和客户端
 
-//if compiling with MinGW, it only works on XP or above
-//use -D_WIN32_WINNT=0x0501
+//->rdp_startup
+//->rdp_socket_create
+//->rdp_socket_bind
+//->[rdp_socket_listen:如果接受传入,需要调用此方法]
+//   |->会话:rdp_socket_connect;rdp_session_send;rdp_session_close;
+//   |->非会话rdp_udp_send;
+//->rdp_socket_close
+//->rdp_cleanup
 
+//rdp socket状态
+typedef enum RDPSOCKETSTATUS {
+    RDPSOCKETSTATUS_INIT = 1, // 初始
+    RDPSOCKETSTATUS_BINDED,   // 已绑定
+    RDPSOCKETSTATUS_LISTENING,// 监听
+} RDPSOCKETSTATUS;
 
-#if defined WIN32 || defined WIN64
-#ifndef __MINGW__
-// Explicitly define 32-bit and 64-bit numbers
-typedef __int32 int32_t;
-typedef __int64 int64_t;
-typedef unsigned __int32 uint32_t;
-#ifndef LEGACY_WIN32
-typedef unsigned __int64 uint64_t;
-#else
-// VC 6.0 does not support unsigned __int64: may cause potential problems.
-typedef __int64 uint64_t;
-#endif
+//会话状态
+typedef enum RDPSESSIONSTAUS {
+    RDPSESSIONSTATUS_INIT = 1,
+    RDPSESSIONSTATUS_CONNECTING ,   // 会话连接中
+    RDPSESSIONSTATUS_CONNECTED,     // 会话已连接
+} RDPOUTCOMESESSIONSTAUS;
 
-#ifdef RDP_EXPORTS
-#define RDP_API __declspec(dllexport)
-#else
-#define RDP_API
-#endif
-#else
-#define RDP_API
-#endif
-#else
-#define RDP_API __attribute__ ((visibility("default")))
-#endif
+typedef enum RDPERROR {
+    RDPERROR_SUCCESS = 0,             //无错误
 
+    RDPERROR_UNKNOWN = -1,            //未知错误
+    RDPERROR_NOTINIT = -2,            //未初始化或者初始化失败
+    RDPERROR_INVALIDPARAM =-100,      //无效的参数(空指针等)
+    RDPERROR_SYSERROR,                //系统api错误,用rdp_getsyserror获取错误码
+
+    RDPERROR_SOCKET_RUNOUT ,           //socket已用完
+    RDPERROR_SOCKET_INVALIDSOCKET ,    //无效的socket
+    RDPERROR_SOCKET_BADSTATE ,         //错误的socket状态
+
+    RDPERROR_SOCKET_ONCONNECTNOTSET ,   //on_connect未设置
+    RDPERROR_SOCKET_ONACCEPTNOTSET ,    //on_accept未设置
+    RDPERROR_SOCKET_ONDISCONNECTNOTSET ,//on_disconnect未设置
+    RDPERROR_SOCKET_ONRECVNOTSET,       //on_recv未设置
+    RDPERROR_SOCKET_ONUDPRECVNOTSET ,   //on_udp_recv未设置
+
+    RDPERROR_SESSION_INVALIDSESSIONID , //无效的sessionid
+    RDPERROR_SESSION_BADSTATE ,         //错误的回话状态
+    RDPERROR_SESSION_CONNTIMEOUT,       //连接超时
+    RDPERROR_SESSION_HEARTBEATTIMEOUT,  //心跳超时
+    RDPERROR_SESSION_CONNRESET,         //连接重置:对方关闭socket等
+} RDPERROR;
+
+typedef enum RDPSESSIONSENDFLAG{
+    RDPSESSIONSENDFLAG_ACK     = 0x01, //确认收到数据包
+    RDPSESSIONSENDFLAG_INORDER = 0x10, //按顺序送达
+}RDPSESSIONSENDFLAG;
+
+typedef ui32 RDPSOCKET;     // != 0
+typedef ui64 RDPSESSIONID;  // != 0
  
-typedef int RDPSOCKET;
 
-typedef enum RDPEPOLLOPT {
-    // this values are defined same as linux epoll.h
-    // so that if system values are used by mistake, they should have the same effect
-    RDP_EPOLL_IN = 0x1,
-    RDP_EPOLL_OUT = 0x4,
-    RDP_EPOLL_ERR = 0x8
-} RDPEPOLLOPT;
+struct sockaddr;
+typedef struct rdp_on_connect_param{
+    i32          err;
+    RDPSOCKET    sock;
+    RDPSESSIONID session_id;
+}rdp_on_connect_param;
 
-typedef enum RDPSTATUS {
-    INIT = 1,
-    OPENED,
-    LISTENING,
-    CONNECTING,
-    CONNECTED,
-    BROKEN,
-    CLOSING,
-    CLOSED,
-    NONEXIST
-} RDPSTATUS;
+typedef struct rdp_on_before_accept_param{
+    RDPSOCKET        sock;
+    RDPSESSIONID     session_id;
+    const sockaddr*  addr;
+    ui32             addrlen;
+    const ui8*       buf;
+    ui32             buf_len;
+}rdp_on_before_accept_param;
 
-typedef enum RDPSOCKOPT {
-    RDP_MSS,             // the Maximum Transfer Unit
-    RDP_SNDSYN,          // if sending is blocking
-    RDP_RCVSYN,          // if receiving is blocking
-    RDP_CC,              // custom congestion control algorithm
-    RDP_FC,		         // Flight flag size (window size)
-    RDP_SNDBUF,          // maximum buffer in sending queue
-    RDP_RCVBUF,          // RDP receiving buffer size
-    RDP_LINGER,          // waiting for unsent data when closing
-    UDP_SNDBUF,          // UDP sending buffer size
-    UDP_RCVBUF,          // UDP receiving buffer size
-    RDP_MAXMSG,          // maximum datagram message size
-    RDP_MSGTTL,          // time-to-live of a datagram message
-    RDP_RENDEZVOUS,      // rendezvous connection mode
-    RDP_SNDTIMEO,        // send() timeout
-    RDP_RCVTIMEO,        // recv() timeout
-    RDP_REUSEADDR,	     // reuse an existing port or create a new one
-    RDP_MAXBW,		     // maximum bandwidth (bytes per second) that the connection can use
-    RDP_STATE,		     // current socket state, see RDPSTATUS, read only
-    RDP_EVENT,		     // current avalable events associated with the socket
-    RDP_SNDDATA,	  	 // size of data in the sending buffer
-    RDP_RCVDATA		     // size of data available for recv
-} RDPSOCKOPT;
+typedef rdp_on_before_accept_param rdp_on_accept_param;
 
-typedef struct RDPPerfMon {
-    // global measurements
-    int64_t msTimeStamp;                 // time since the RDP entity is started, in milliseconds
-    int64_t pktSentTotal;                // total number of sent data packets, including retransmissions
-    int64_t pktRecvTotal;                // total number of received packets
-    int pktSndLossTotal;                 // total number of lost packets (sender side)
-    int pktRcvLossTotal;                 // total number of lost packets (receiver side)
-    int pktRetransTotal;                 // total number of retransmitted packets
-    int pktSentACKTotal;                 // total number of sent ACK packets
-    int pktRecvACKTotal;                 // total number of received ACK packets
-    int pktSentNAKTotal;                 // total number of sent NAK packets
-    int pktRecvNAKTotal;                 // total number of received NAK packets
-    int64_t usSndDurationTotal;	      	 // total time duration when RDP is sending data (idle time exclusive)
+typedef struct rdp_on_disconnect_param{
+    i32          err;
+    ui16         reason;
+    RDPSOCKET    sock;
+    RDPSESSIONID session_id;
 
-    // local measurements
-    int64_t pktSent;                     // number of sent data packets, including retransmissions
-    int64_t pktRecv;                     // number of received packets
-    int pktSndLoss;                      // number of lost packets (sender side)
-    int pktRcvLoss;                      // number of lost packets (receiver side)
-    int pktRetrans;                      // number of retransmitted packets
-    int pktSentACK;                      // number of sent ACK packets
-    int pktRecvACK;                      // number of received ACK packets
-    int pktSentNAK;                      // number of sent NAK packets
-    int pktRecvNAK;                      // number of received NAK packets
-    double mbpsSendRate;                 // sending rate in Mb/s
-    double mbpsRecvRate;                 // receiving rate in Mb/s
-    int64_t usSndDuration;		         // busy sending time (i.e., idle time exclusive)
+    typedef enum disconnect_reason{
+        disconnect_reason_none = 0,
+    }disconnect_reason;
+}rdp_on_disconnect_param;
 
-    // instant measurements
-    double usPktSndPeriod;               // packet sending period, in microseconds
-    int pktFlowWindow;                   // flow window size, in number of packets
-    int pktCongestionWindow;             // congestion window size, in number of packets
-    int pktFlightSize;                   // number of packets on flight
-    double msRTT;                        // RTT, in milliseconds
-    double mbpsBandwidth;                // estimated bandwidth, in Mb/s
-    int byteAvailSndBuf;                 // available RDP sender buffer size
-    int byteAvailRcvBuf;                 // available RDP receiver buffer size
-}RDPPerfMon;
- 
+typedef struct rdp_on_recv_param{
+    RDPSOCKET        sock;
+    RDPSESSIONID     session_id;
+    const ui8*       buf;
+    ui16             buf_len;
+}rdp_on_recv_param;
+
+typedef struct rdp_on_send_param{
+    i32              err;
+    RDPSOCKET        sock;
+    RDPSESSIONID     session_id;
+    ui32             local_send_queue_size;
+    ui32             peer_window_size_;
+}rdp_on_send_param;
+
+typedef struct rdp_on_udp_recv_param{
+    RDPSOCKET        sock;
+    const sockaddr*  addr;
+    ui32             addrlen;
+    const ui8*       buf;
+    ui16             buf_len;
+}rdp_on_udp_recv_param;
+
+
+typedef struct rdp_startup_param {
+    ui32 version;         // rdp sdk 版本号 RDP_SDK_VERSION
+    ui8  max_sock;        // 最大rdp socket数量(应该小于等于256),默认1
+    ui16 recv_thread_num; // 数据接收线程数量:后台数据接收线程数量,默认1
+    ui32 recv_buf_size;   // 数据接收缓冲区大小:传递给recvfrom的缓冲区大小,默认4*1024,此值影响数据包最大能接收的大小
+    
+    //on_connect 传出连接回调,如果不设置此回调,将不允许传出
+    void(__cdecl*on_connect)(const rdp_on_connect_param* param);
+    //on_before_accept 接受传入连接前,会调用此回调,可以用来过滤连接,可以为空;返回false将拒绝此连接请求(不会响应请求端)
+    bool(__cdecl*on_before_accept)(const rdp_on_before_accept_param* param);
+    //on_accept 传入连接回调,如果不设置此回调,将不允许传入
+    void(__cdecl*on_accept)(const rdp_on_accept_param* param);
+    //on_disconnect 连接断开回调,必须设置
+    void(__cdecl*on_disconnect)(const rdp_on_disconnect_param* param);
+    //on_recv 数据接收回调,必须设置
+    void(__cdecl*on_recv)(const rdp_on_recv_param* param);
+    //on_send 连接,不可靠的数据接收回调,该类型数据的发送使用rdp_session_send
+    void(__cdecl*on_send)(const rdp_on_send_param* param);
+    //on_udp_recv 非连接,不可靠的数据接收回调,该类型数据的发送使用rdp_udp_send
+    void(__cdecl*on_udp_recv)(const rdp_on_udp_recv_param* param);
+    //ip地址hash函数,可以为空
+    ui32(__cdecl*on_hash_addr)(const sockaddr* addr, ui32 addrlen);
+} rdp_startup_param;
+
+typedef struct rdp_socket_create_param {
+    bool is_v4;                 // 是否是ipv4
+    ui16 ack_timeout;           // 确认超时(在此时间内未收到确认包,认为超时,系统将自动重发),默认300 ms
+    ui16 heart_beat_timeout;    // 心跳超时(每隔heart_beat_timeout,将会发一次心跳),默认180s
+    ui16 max_send_queue_size;   // 已发送但是未确认的队列大小,默认1024,为0不限制,如果不为0,当达到max_send_queue_size后,rdp_session_send将会阻塞
+    ui16 max_recv_queue_size;   // 接收队列最大大小,默认1024,为0不限制,如果不为0,接收队列(由于数据包到达先后顺序问题)中数据包数量达到此值时,将拒绝接收新数据包
+    ui16 in_session_hash_size;  // 传入会话hash大小,默认1
+} rdp_socket_create_param;
+
 #endif
-

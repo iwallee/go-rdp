@@ -1,40 +1,35 @@
 #ifndef RDPGO_H
 #define RDPGO_H
 
-typedef char bool;
+
 #include "lint.h"
+
+typedef ui8 bool;
+typedef struct sockaddr {} sockaddr;
+
 #include "rdp_def.h"
 
-void __cdecl on_connect(const rdp_on_connect_param* param)
-{
-}
+typedef void( __cdecl fn__on_connect)(  rdp_on_connect_param* param);
 
-bool __cdecl on_before_accept(const rdp_on_before_accept_param* param)
-{
-}
+extern void on_connect(rdp_on_connect_param* param);
+extern bool on_before_accept( rdp_on_before_accept_param* param);
+extern void on_accept( rdp_on_accept_param* param);
+extern void on_disconnect( rdp_on_disconnect_param* param);
+extern void on_recv( rdp_on_recv_param* param);
+extern void on_send( rdp_on_send_param* param);
+extern void on_udp_recv( rdp_on_udp_recv_param* param);
+extern ui32 on_hash_addr( sockaddr* addr, ui32 addrlen);
 
-void __cdecl on_accept(const rdp_on_accept_param* param)
-{
-}
+void __cdecl __on_connect(  rdp_on_connect_param* param);
+bool __cdecl __on_before_accept( rdp_on_before_accept_param* param);
+void __cdecl __on_accept( rdp_on_accept_param* param);
+void __cdecl __on_disconnect( rdp_on_disconnect_param* param);
+void __cdecl __on_recv( rdp_on_recv_param* param);
+void __cdecl __on_send( rdp_on_send_param* param);
+void __cdecl __on_udp_recv( rdp_on_udp_recv_param* param);
+ui32 __cdecl __on_hash_addr( sockaddr* addr, ui32 addrlen);
 
-void __cdecl on_disconnect(const rdp_on_disconnect_param* param)
-{
-}
+i32 socket_create(void* fn, rdp_socket_create_param* param, RDPSOCKET* sock);
 
-void __cdecl on_recv(const rdp_on_recv_param* param)
-{
-}
-
-void __cdecl on_send(const rdp_on_send_param* param)
-{
-}
-
-void __cdecl on_udp_recv(const rdp_on_udp_recv_param* param)
-{
-}
-
-ui32 __cdecl on_hash_addr(const sockaddr* addr, ui32 addrlen)
-{
-}
 
 #endif

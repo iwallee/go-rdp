@@ -73,12 +73,14 @@ typedef ui64 RDPSESSIONID;  // != 0
 
 struct sockaddr;
 typedef struct rdp_on_connect_param{
+    void*        userdata;
     i32          err;
     RDPSOCKET    sock;
     RDPSESSIONID session_id;
 }rdp_on_connect_param;
 
 typedef struct rdp_on_before_accept_param{
+    void*            userdata;
     RDPSOCKET        sock;
     RDPSESSIONID     session_id;
     const sockaddr*  addr;
@@ -88,6 +90,7 @@ typedef struct rdp_on_before_accept_param{
 }rdp_on_before_accept_param;
 
 typedef struct rdp_on_accept_param{
+    void*            userdata;
     RDPSOCKET        sock;
     RDPSESSIONID     session_id;
     const sockaddr*  addr;
@@ -97,6 +100,7 @@ typedef struct rdp_on_accept_param{
 }rdp_on_accept_param;
 
 typedef struct rdp_on_disconnect_param{
+    void*        userdata;
     i32          err;
     ui16         reason;//RDPSESSIONDISCONNECTRESSON
     RDPSOCKET    sock;
@@ -104,6 +108,7 @@ typedef struct rdp_on_disconnect_param{
 }rdp_on_disconnect_param;
 
 typedef struct rdp_on_recv_param{
+    void*            userdata;
     RDPSOCKET        sock;
     RDPSESSIONID     session_id;
     const ui8*       buf;
@@ -111,14 +116,16 @@ typedef struct rdp_on_recv_param{
 }rdp_on_recv_param;
 
 typedef struct rdp_on_send_param{
+    void*            userdata;
     i32              err;
     RDPSOCKET        sock;
     RDPSESSIONID     session_id;
     ui32             local_send_queue_size;
-    ui32             peer_window_size_;
+    ui32             peer_window_size;
 }rdp_on_send_param;
 
 typedef struct rdp_on_udp_recv_param{
+    void*            userdata;
     RDPSOCKET        sock;
     const sockaddr*  addr;
     ui32             addrlen;
@@ -137,6 +144,7 @@ typedef struct rdp_startup_param {
 } rdp_startup_param;
 
 typedef struct rdp_socket_create_param {
+    void* userdata;
     bool is_v4;                 // 是否是ipv4
     ui16 ack_timeout;           // 确认超时(在此时间内未收到确认包,认为超时,系统将自动重发),默认300 ms
     ui16 heart_beat_timeout;    // 心跳超时(每隔heart_beat_timeout,将会发一次心跳),默认180s

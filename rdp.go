@@ -436,10 +436,11 @@ func addr_to(addr *C.struct_sockaddr, addrlen C.ui32) (*RDPAddr, int32) {
 	len := len(ip)
 	var port int
 	var addr1 *RDPAddr
+	var addrlen1 = int32(addrlen)
 	r, _, _ := _addr_to.Call(uintptr(unsafe.Pointer(addr)),
 		uintptr(addrlen),
 		uintptr(unsafe.Pointer(&ip[0])),
-		uintptr(len),
+		uintptr(unsafe.Pointer(&addrlen1)),
 		uintptr(unsafe.Pointer(&port)))
 	if int32(r) >= 0 {
 		addr1 = &RDPAddr{

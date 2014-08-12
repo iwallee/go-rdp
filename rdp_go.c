@@ -1,5 +1,16 @@
 #include "rdp_go.h"
 
+
+extern void on_connect(rdp_on_connect_param* param);
+extern bool on_before_accept( rdp_on_before_accept_param* param);
+extern void on_accept( rdp_on_accept_param* param);
+extern void on_disconnect( rdp_on_disconnect_param* param);
+extern void on_recv( rdp_on_recv_param* param);
+extern void on_send( rdp_on_send_param* param);
+extern void on_udp_recv( rdp_on_udp_recv_param* param);
+extern ui32 on_hash_addr( sockaddr* addr, ui32 addrlen);
+
+
 void __cdecl __on_connect(  rdp_on_connect_param* param)
 {
     on_connect(param);

@@ -9,17 +9,6 @@ typedef struct sockaddr {} sockaddr;
 
 #include "rdp_def.h"
 
-typedef void( __cdecl fn__on_connect)(  rdp_on_connect_param* param);
-
-extern void on_connect(rdp_on_connect_param* param);
-extern bool on_before_accept( rdp_on_before_accept_param* param);
-extern void on_accept( rdp_on_accept_param* param);
-extern void on_disconnect( rdp_on_disconnect_param* param);
-extern void on_recv( rdp_on_recv_param* param);
-extern void on_send( rdp_on_send_param* param);
-extern void on_udp_recv( rdp_on_udp_recv_param* param);
-extern ui32 on_hash_addr( sockaddr* addr, ui32 addrlen);
-
 void __cdecl __on_connect(  rdp_on_connect_param* param);
 bool __cdecl __on_before_accept( rdp_on_before_accept_param* param);
 void __cdecl __on_accept( rdp_on_accept_param* param);

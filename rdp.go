@@ -63,21 +63,30 @@ type RDPSOCKET uint32
 type RDPSESSIONID uint64
 
 type RDP_on_connect_param struct {
+	User_data  uintptr
 	Err        int32
 	Sock       RDPSOCKET
 	Session_id RDPSESSIONID
 }
 
 type RDP_on_before_accept_param struct {
+	User_data  uintptr
 	Sock       RDPSOCKET
 	Session_id RDPSESSIONID
 	Addr       *RDPAddr
 	Buf        []byte
 }
 
-type RDP_on_accept_param RDP_on_before_accept_param
+type RDP_on_accept_param struct {
+	User_data  uintptr
+	Sock       RDPSOCKET
+	Session_id RDPSESSIONID
+	Addr       *RDPAddr
+	Buf        []byte
+}
 
 type RDP_on_disconnect_param struct {
+	User_data  uintptr
 	Err        int32
 	Reason     uint16
 	Sock       RDPSOCKET
@@ -85,12 +94,14 @@ type RDP_on_disconnect_param struct {
 }
 
 type RDP_on_recv_param struct {
+	User_data  uintptr
 	Sock       RDPSOCKET
 	Session_id RDPSESSIONID
 	Buf        []byte
 }
 
 type RDP_on_send_param struct {
+	User_data             uintptr
 	Err                   int32
 	Sock                  RDPSOCKET
 	Session_id            RDPSESSIONID
@@ -99,12 +110,14 @@ type RDP_on_send_param struct {
 }
 
 type RDP_on_udp_recv_param struct {
-	Sock RDPSOCKET
-	Addr *RDPAddr
-	Buf  []byte
+	User_data   uintptr
+	Sock        RDPSOCKET
+	Addr       *RDPAddr
+	Buf         []byte
 }
 
 type RDP_on_udp_send_param struct {
+	User_data  uintptr
 	Err        int32
 	Sock       RDPSOCKET
 	Session_id RDPSESSIONID
@@ -136,6 +149,7 @@ type RDP_startup_param struct {
 }
 
 type RDP_socket_create_param struct {
+	User_data            uintptr
 	Is_v4                bool
 	Ack_timeout          uint16
 	Heart_beat_timeout   uint16
@@ -192,7 +206,7 @@ func RDP_socket_create(param *RDP_socket_create_param) (RDPSOCKET, int32) {
 	} else {
 		cparam.is_v4 = 0
 	}
-
+    cparam.userdata = unsafe.Pointer(param.User_data)
 	cparam.ack_timeout = (C.ui16)(param.Ack_timeout)
 	cparam.heart_beat_timeout = (C.ui16)(param.Heart_beat_timeout)
 	cparam.max_send_queue_size = (C.ui16)(param.Max_send_queue_size)
@@ -308,6 +322,7 @@ var starup_param RDP_startup_param
 //export on_connect
 func on_connect(param *C.struct_rdp_on_connect_param) {
 	p := RDP_on_connect_param{
+		User_data:  uintptr(param.userdata),
 		Err:        int32(param.err),
 		Sock:       RDPSOCKET(param.sock),
 		Session_id: RDPSESSIONID(param.session_id),
@@ -318,6 +333,7 @@ func on_connect(param *C.struct_rdp_on_connect_param) {
 //export on_disconnect
 func on_disconnect(param *C.struct_rdp_on_disconnect_param) {
 	p := RDP_on_disconnect_param{
+		User_data:  uintptr(param.userdata),
 		Err:        int32(param.err),
 		Reason:     uint16(param.reason),
 		Sock:       RDPSOCKET(param.sock),
@@ -328,14 +344,15 @@ func on_disconnect(param *C.struct_rdp_on_disconnect_param) {
 
 //export on_before_accept
 func on_before_accept(param *C.struct_rdp_on_before_accept_param) bool {
-	if starup_param.On_before_accept != nil{
+	if starup_param.On_before_accept != nil {
 		addr, n := addr_to(param.addr, param.addrlen)
 		if n >= 0 {
 			p := RDP_on_before_accept_param{
+				User_data:  uintptr(param.userdata),
 				Sock:       RDPSOCKET(param.sock),
 				Session_id: RDPSESSIONID(param.session_id),
 				Addr:       addr,
-				//Buf:        param.buf,
+				Buf:        C.GoBytes(unsafe.Pointer(param.buf), C.int(param.buf_len)) ,
 			}
 			starup_param.On_before_accept(&p)
 		}
@@ -346,13 +363,14 @@ func on_before_accept(param *C.struct_rdp_on_before_accept_param) bool {
 //export on_accept
 func on_accept(param *C.struct_rdp_on_accept_param) {
 	if starup_param.On_accept != nil {
-		addr, n  := addr_to(param.addr, param.addrlen)
+		addr, n := addr_to(param.addr, param.addrlen)
 		if n >= 0 {
 			p := RDP_on_accept_param{
+				User_data:  uintptr(param.userdata),
 				Sock:       RDPSOCKET(param.sock),
 				Session_id: RDPSESSIONID(param.session_id),
 				Addr:       addr,
-				//Buf:        param.buf,
+				Buf:        C.GoBytes(unsafe.Pointer(param.buf), C.int(param.buf_len)) ,
 			}
 			starup_param.On_accept(&p)
 		}
@@ -362,17 +380,19 @@ func on_accept(param *C.struct_rdp_on_accept_param) {
 //export on_recv
 func on_recv(param *C.struct_rdp_on_recv_param) {
 	p := RDP_on_recv_param{
+		User_data:  uintptr(param.userdata),
 		Sock:       RDPSOCKET(param.sock),
 		Session_id: RDPSESSIONID(param.session_id),
-		//Buf:        param.buf,
+		Buf:        C.GoBytes(unsafe.Pointer(param.buf), C.int(param.buf_len)) ,
 	}
 	starup_param.On_recv(&p)
 }
 
 //export on_send
 func on_send(param *C.struct_rdp_on_send_param) {
-	if starup_param.On_send  != nil{
+	if starup_param.On_send != nil {
 		p := RDP_on_send_param{
+			User_data:             uintptr(param.userdata),
 			Err:                   int32(param.err),
 			Sock:                  RDPSOCKET(param.sock),
 			Session_id:            RDPSESSIONID(param.session_id),
@@ -385,14 +405,16 @@ func on_send(param *C.struct_rdp_on_send_param) {
 
 //export on_udp_recv
 func on_udp_recv(param *C.struct_rdp_on_udp_recv_param) {
-	if starup_param.On_udp_recv  != nil{
+	if starup_param.On_udp_recv != nil {
 		addr, n := addr_to(param.addr, param.addrlen)
 		if n >= 0 {
 			p := RDP_on_udp_recv_param{
-				Sock: RDPSOCKET(param.sock),
-				Addr: addr,
-				//Buf:  param.buf,
+				User_data:  uintptr(param.userdata),
+				Sock:       RDPSOCKET(param.sock),
+				Addr:       addr,
+				Buf:        C.GoBytes(unsafe.Pointer(param.buf), C.int(param.buf_len)) ,
 			}
+
 			starup_param.On_udp_recv(&p)
 		}
 	}
@@ -401,7 +423,7 @@ func on_udp_recv(param *C.struct_rdp_on_udp_recv_param) {
 //export on_hash_addr
 func on_hash_addr(addr *C.struct_sockaddr, addrlen C.ui32) uint32 {
 	if starup_param.On_hash_addr != nil {
-		add, n  := addr_to(addr, addrlen)
+		add, n := addr_to(addr, addrlen)
 		if n >= 0 {
 			return starup_param.On_hash_addr(add)
 		}
@@ -427,3 +449,4 @@ func addr_to(addr *C.struct_sockaddr, addrlen C.ui32) (*RDPAddr, int32) {
 	}
 	return addr1, int32(r)
 }
+

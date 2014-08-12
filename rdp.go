@@ -2,61 +2,64 @@ package rdp
 
 //#include "rdp_go.h"
 import "C"
-
 import "unsafe"
 
+import (
+	"sync"
+)
+
 const (
-	RDP_SDK_VERSION = 0x00010001
+	RDP_SDK_VERSION = C.RDP_SDK_VERSION
 )
 
 //RDPSOCKETSTATUS
 const (
-	RDPSOCKETSTATUS_INIT = 1
-	RDPSOCKETSTATUS_BINDED
-	RDPSOCKETSTATUS_LISTENING
+	RDPSOCKETSTATUS_INIT      = C.RDPSOCKETSTATUS_INIT
+	RDPSOCKETSTATUS_BINDED    = C.RDPSOCKETSTATUS_BINDED
+	RDPSOCKETSTATUS_LISTENING = C.RDPSOCKETSTATUS_LISTENING
 )
 
 //RDPSESSIONSTAUS
 const (
-	RDPSESSIONSTATUS_INIT = 1
-	RDPSESSIONSTATUS_CONNECTING
-	RDPSESSIONSTATUS_CONNECTED
+	RDPSESSIONSTATUS_INIT       = C.RDPSESSIONSTATUS_INIT
+	RDPSESSIONSTATUS_CONNECTING = C.RDPSESSIONSTATUS_CONNECTING
+	RDPSESSIONSTATUS_CONNECTED  = C.RDPSESSIONSTATUS_CONNECTED
 )
 
 //RDPERROR
 const (
-	RDPERROR_SUCCESS = 0
+	RDPERROR_SUCCESS = C.RDPERROR_SUCCESS
 
-	RDPERROR_UNKNOWN      = -1
-	RDPERROR_NOTINIT      = -2
-	RDPERROR_INVALIDPARAM = -100
-	RDPERROR_SYSERROR
+	RDPERROR_UNKNOWN      = C.RDPERROR_UNKNOWN
+	RDPERROR_NOTINIT      = C.RDPERROR_NOTINIT
+	RDPERROR_INVALIDPARAM = C.RDPERROR_INVALIDPARAM
+	RDPERROR_SYSERROR     = C.RDPERROR_SYSERROR
 
-	RDPERROR_SOCKET_RUNOUT
-	RDPERROR_SOCKET_INVALIDSOCKET
-	RDPERROR_SOCKET_BADSTATE
+	RDPERROR_SOCKET_RUNOUT        = C.RDPERROR_SOCKET_RUNOUT
+	RDPERROR_SOCKET_INVALIDSOCKET = C.RDPERROR_SOCKET_INVALIDSOCKET
+	RDPERROR_SOCKET_BADSTATE      = C.RDPERROR_SOCKET_BADSTATE
 
-	RDPERROR_SOCKET_ONCONNECTNOTSET
-	RDPERROR_SOCKET_ONACCEPTNOTSET
-	RDPERROR_SOCKET_ONDISCONNECTNOTSET
-	RDPERROR_SOCKET_ONRECVNOTSET
-	RDPERROR_SOCKET_ONUDPRECVNOTSET
+	RDPERROR_SOCKET_ONCONNECTNOTSET    = C.RDPERROR_SOCKET_ONCONNECTNOTSET
+	RDPERROR_SOCKET_ONACCEPTNOTSET     = C.RDPERROR_SOCKET_ONACCEPTNOTSET
+	RDPERROR_SOCKET_ONDISCONNECTNOTSET = C.RDPERROR_SOCKET_ONDISCONNECTNOTSET
+	RDPERROR_SOCKET_ONRECVNOTSET       = C.RDPERROR_SOCKET_ONRECVNOTSET
+	RDPERROR_SOCKET_ONUDPRECVNOTSET    = C.RDPERROR_SOCKET_ONUDPRECVNOTSET
 
-	RDPERROR_SESSION_INVALIDSESSIONID
-	RDPERROR_SESSION_BADSTATE
-	RDPERROR_SESSION_CONNTIMEOUT
-	RDPERROR_SESSION_HEARTBEATTIMEOUT
-	RDPERROR_SESSION_CONNRESET
+	RDPERROR_SESSION_INVALIDSESSIONID = C.RDPERROR_SESSION_INVALIDSESSIONID
+	RDPERROR_SESSION_BADSTATE         = C.RDPERROR_SESSION_BADSTATE
+	RDPERROR_SESSION_CONNTIMEOUT      = C.RDPERROR_SESSION_CONNTIMEOUT
+	RDPERROR_SESSION_HEARTBEATTIMEOUT = C.RDPERROR_SESSION_HEARTBEATTIMEOUT
+	RDPERROR_SESSION_CONNRESET        = C.RDPERROR_SESSION_CONNRESET
 )
 
 //RDPSESSIONSENDFLAG
 const (
-	RDPSESSIONSENDFLAG_ACK     = 0x01
-	RDPSESSIONSENDFLAG_INORDER = 0x10
+	RDPSESSIONSENDFLAG_ACK     = C.RDPSESSIONSENDFLAG_ACK
+	RDPSESSIONSENDFLAG_INORDER = C.RDPSESSIONSENDFLAG_INORDER
 )
 
 const (
-	disconnect_reason_none = 0
+	DISCONNECTRESSON_NONE = C.DISCONNECTRESSON_NONE
 )
 
 type RDPSOCKET uint32
@@ -138,13 +141,6 @@ type RDP_startup_param struct {
 	Recv_thread_num uint16
 	Recv_buf_size   uint32
 
-	On_connect       RDP_on_connect
-	On_before_accept RDP_on_before_accept
-	On_accept        RDP_on_accept
-	On_disconnect    RDP_on_disconnect
-	On_recv          RDP_on_recv
-	On_send          RDP_on_send
-	On_udp_recv      RDP_on_udp_recv
 	On_hash_addr     RDP_on_hash_addr
 }
 
@@ -156,6 +152,14 @@ type RDP_socket_create_param struct {
 	Max_send_queue_size  uint16
 	Max_recv_queue_size  uint16
 	In_session_hash_size uint16
+
+	On_connect       RDP_on_connect
+	On_before_accept RDP_on_before_accept
+	On_accept        RDP_on_accept
+	On_disconnect    RDP_on_disconnect
+	On_recv          RDP_on_recv
+	On_send          RDP_on_send
+	On_udp_recv      RDP_on_udp_recv
 }
 
 func RDP_startup(param *RDP_startup_param) int32 {
@@ -206,14 +210,14 @@ func RDP_socket_create(param *RDP_socket_create_param) (RDPSOCKET, int32) {
 	} else {
 		cparam.is_v4 = 0
 	}
-    cparam.userdata = unsafe.Pointer(param.User_data)
+	cparam.userdata = unsafe.Pointer(param.User_data)
 	cparam.ack_timeout = (C.ui16)(param.Ack_timeout)
 	cparam.heart_beat_timeout = (C.ui16)(param.Heart_beat_timeout)
 	cparam.max_send_queue_size = (C.ui16)(param.Max_send_queue_size)
 	cparam.max_recv_queue_size = (C.ui16)(param.Max_recv_queue_size)
 	cparam.in_session_hash_size = (C.ui16)(param.In_session_hash_size)
 
-	/*cparam.on_connect = uintptr(unsafe.Pointer(C.__on_connect))
+	/*cparam.on_connect = C.__on_connect
 	cparam.on_before_accept = C.__on_before_accept
 	cparam.on_accept = C.__on_accept
 	cparam.on_disconnect = C.__on_disconnect
@@ -224,28 +228,20 @@ func RDP_socket_create(param *RDP_socket_create_param) (RDPSOCKET, int32) {
 		&cparam,
 		&sock)
 
-	//r, _, _ := _socket_create.Call(uintptr(unsafe.Pointer(&cparam)),
-	//	uintptr(unsafe.Pointer(&sock)))
+	if sock >= 0 {
+		mutex_lock.Lock()
+		socket_create_param[RDPSOCKET(sock)] = param
+		mutex_lock.Unlock()
+	}
 	return RDPSOCKET(sock), int32(r)
 }
 func RDP_socket_get_create_param(sock RDPSOCKET) (*RDP_socket_create_param, int32) {
-	var cparam C.struct_rdp_socket_create_param
-	r, _, _ := _socket_get_create_param.Call(uintptr(sock),
-		uintptr(unsafe.Pointer(&cparam)))
-
-	var param *RDP_socket_create_param
-	if int32(r) >= 0 {
-		param = &RDP_socket_create_param{
-			Is_v4: (bool)(cparam.is_v4 == 0),
-			Ack_timeout : (uint16)(cparam.ack_timeout),
-			Heart_beat_timeout: (uint16)(cparam.heart_beat_timeout),
-			Max_send_queue_size : (uint16)(cparam.max_send_queue_size),
-			Max_recv_queue_size : (uint16)(cparam.max_recv_queue_size),
-			In_session_hash_size : (uint16)(cparam.in_session_hash_size),
-		}
+	param, ok := socket_create_param[sock]
+	if ok {
+		return param, RDPERROR_SUCCESS
 	}
 
-	return param, int32(r)
+	return nil, RDPERROR_SOCKET_INVALIDSOCKET
 }
 func RDP_socket_get_state(sock RDPSOCKET) (int32, int32) {
 	var state int
@@ -255,6 +251,9 @@ func RDP_socket_get_state(sock RDPSOCKET) (int32, int32) {
 }
 func RDP_socket_close(sock RDPSOCKET) int32 {
 	r, _, _ := _socket_close.Call(uintptr(sock))
+	mutex_lock.Lock()
+	delete (socket_create_param, sock)
+	mutex_lock.Unlock()
 	return int32(r)
 }
 func RDP_socket_bind(sock RDPSOCKET, addr *RDPAddr) int32 {
@@ -276,6 +275,10 @@ func RDP_socket_connect(sock RDPSOCKET, addr *RDPAddr, timeout int32, data []byt
 		uintptr(addr.Port),
 		uintptr(unsafe.Pointer(&session_id)))
 	return session_id, int32(r)
+}
+func RDP_socket_recv(timeout int32) (int32) {
+	r, _, _ := _socket_recv.Call(uintptr(timeout))
+	return int32(r)
 }
 func RDP_session_close(sock RDPSOCKET, session_id RDPSESSIONID, reason int32) int32 {
 	r, _, _ := _session_close.Call(uintptr(sock),
@@ -317,107 +320,145 @@ func RDP_udp_send(sock RDPSOCKET, addr *RDPAddr, data []byte) int32 {
 }
 
 /////////////////////////////////////////////////////////////////
+var mutex_lock sync.Mutex
 var starup_param RDP_startup_param
+var socket_create_param map[RDPSOCKET] *RDP_socket_create_param = make(map[RDPSOCKET] *RDP_socket_create_param)
 
 //export on_connect
 func on_connect(param *C.struct_rdp_on_connect_param) {
-	p := RDP_on_connect_param{
-		User_data:  uintptr(param.userdata),
-		Err:        int32(param.err),
-		Sock:       RDPSOCKET(param.sock),
-		Session_id: RDPSESSIONID(param.session_id),
+	mutex_lock.Lock()
+	s , ok := socket_create_param[RDPSOCKET(param.sock)]
+	if ok {
+		p := RDP_on_connect_param{
+			User_data:  uintptr(param.userdata),
+			Err:        int32(param.err),
+			Sock:       RDPSOCKET(param.sock),
+			Session_id: RDPSESSIONID(param.session_id),
+		}
+		s.On_connect(&p)
 	}
-	starup_param.On_connect(&p)
+	mutex_lock.Unlock()
 }
 
 //export on_disconnect
 func on_disconnect(param *C.struct_rdp_on_disconnect_param) {
-	p := RDP_on_disconnect_param{
-		User_data:  uintptr(param.userdata),
-		Err:        int32(param.err),
-		Reason:     uint16(param.reason),
-		Sock:       RDPSOCKET(param.sock),
-		Session_id: RDPSESSIONID(param.session_id),
+	mutex_lock.Lock()
+	s , ok := socket_create_param[RDPSOCKET(param.sock)]
+	if ok {
+		p := RDP_on_disconnect_param{
+			User_data:  uintptr(param.userdata),
+			Err:        int32(param.err),
+			Reason:     uint16(param.reason),
+			Sock:       RDPSOCKET(param.sock),
+			Session_id: RDPSESSIONID(param.session_id),
+		}
+		s.On_disconnect(&p)
 	}
-	starup_param.On_disconnect(&p)
+	mutex_lock.Unlock()
 }
 
 //export on_before_accept
 func on_before_accept(param *C.struct_rdp_on_before_accept_param) bool {
-	if starup_param.On_before_accept != nil {
-		addr, n := addr_to(param.addr, param.addrlen)
-		if n >= 0 {
-			p := RDP_on_before_accept_param{
-				User_data:  uintptr(param.userdata),
-				Sock:       RDPSOCKET(param.sock),
-				Session_id: RDPSESSIONID(param.session_id),
-				Addr:       addr,
-				Buf:        C.GoBytes(unsafe.Pointer(param.buf), C.int(param.buf_len)) ,
+	var ret bool = false
+	mutex_lock.Lock()
+	s , ok := socket_create_param[RDPSOCKET(param.sock)]
+	if ok {
+		if s.On_before_accept != nil {
+			addr, n := addr_to(param.addr, param.addrlen)
+			if n >= 0 {
+				p := RDP_on_before_accept_param{
+					User_data:  uintptr(param.userdata),
+					Sock:       RDPSOCKET(param.sock),
+					Session_id: RDPSESSIONID(param.session_id),
+					Addr:       addr,
+					Buf:        C.GoBytes(unsafe.Pointer(param.buf), C.int(param.buf_len)) ,
+				}
+				ret = s.On_before_accept(&p)
 			}
-			starup_param.On_before_accept(&p)
 		}
 	}
-	return true
+	mutex_lock.Unlock()
+	return ret
 }
 
 //export on_accept
 func on_accept(param *C.struct_rdp_on_accept_param) {
-	if starup_param.On_accept != nil {
-		addr, n := addr_to(param.addr, param.addrlen)
-		if n >= 0 {
-			p := RDP_on_accept_param{
-				User_data:  uintptr(param.userdata),
-				Sock:       RDPSOCKET(param.sock),
-				Session_id: RDPSESSIONID(param.session_id),
-				Addr:       addr,
-				Buf:        C.GoBytes(unsafe.Pointer(param.buf), C.int(param.buf_len)) ,
+	mutex_lock.Lock()
+	s , ok := socket_create_param[RDPSOCKET(param.sock)]
+	if ok {
+		if s.On_accept != nil {
+			addr, n := addr_to(param.addr, param.addrlen)
+			if n >= 0 {
+				p := RDP_on_accept_param{
+					User_data:  uintptr(param.userdata),
+					Sock:       RDPSOCKET(param.sock),
+					Session_id: RDPSESSIONID(param.session_id),
+					Addr:       addr,
+					Buf:        C.GoBytes(unsafe.Pointer(param.buf), C.int(param.buf_len)) ,
+				}
+				s.On_accept(&p)
 			}
-			starup_param.On_accept(&p)
 		}
 	}
+	mutex_lock.Unlock()
 }
 
 //export on_recv
 func on_recv(param *C.struct_rdp_on_recv_param) {
-	p := RDP_on_recv_param{
-		User_data:  uintptr(param.userdata),
-		Sock:       RDPSOCKET(param.sock),
-		Session_id: RDPSESSIONID(param.session_id),
-		Buf:        C.GoBytes(unsafe.Pointer(param.buf), C.int(param.buf_len)) ,
+	mutex_lock.Lock()
+	s , ok := socket_create_param[RDPSOCKET(param.sock)]
+	if ok {
+		p := RDP_on_recv_param{
+			User_data:  uintptr(param.userdata),
+			Sock:       RDPSOCKET(param.sock),
+			Session_id: RDPSESSIONID(param.session_id),
+			Buf:        C.GoBytes(unsafe.Pointer(param.buf), C.int(param.buf_len)) ,
+		}
+		s.On_recv(&p)
 	}
-	starup_param.On_recv(&p)
+	mutex_lock.Unlock()
 }
 
 //export on_send
 func on_send(param *C.struct_rdp_on_send_param) {
-	if starup_param.On_send != nil {
-		p := RDP_on_send_param{
-			User_data:             uintptr(param.userdata),
-			Err:                   int32(param.err),
-			Sock:                  RDPSOCKET(param.sock),
-			Session_id:            RDPSESSIONID(param.session_id),
-			Local_send_queue_size: uint32(param.local_send_queue_size),
-			Peer_window_size_:     uint32(param.peer_window_size),
+	mutex_lock.Lock()
+	s , ok := socket_create_param[RDPSOCKET(param.sock)]
+	if ok {
+		if s.On_send != nil {
+			p := RDP_on_send_param{
+				User_data:             uintptr(param.userdata),
+				Err:                   int32(param.err),
+				Sock:                  RDPSOCKET(param.sock),
+				Session_id:            RDPSESSIONID(param.session_id),
+				Local_send_queue_size: uint32(param.local_send_queue_size),
+				Peer_window_size_:     uint32(param.peer_window_size),
+			}
+			s.On_send(&p)
 		}
-		starup_param.On_send(&p)
 	}
+	mutex_lock.Unlock()
 }
 
 //export on_udp_recv
 func on_udp_recv(param *C.struct_rdp_on_udp_recv_param) {
-	if starup_param.On_udp_recv != nil {
-		addr, n := addr_to(param.addr, param.addrlen)
-		if n >= 0 {
-			p := RDP_on_udp_recv_param{
-				User_data:  uintptr(param.userdata),
-				Sock:       RDPSOCKET(param.sock),
-				Addr:       addr,
-				Buf:        C.GoBytes(unsafe.Pointer(param.buf), C.int(param.buf_len)) ,
-			}
+	mutex_lock.Lock()
+	s , ok := socket_create_param[RDPSOCKET(param.sock)]
+	if ok {
+		if s.On_udp_recv != nil {
+			addr, n := addr_to(param.addr, param.addrlen)
+			if n >= 0 {
+				p := RDP_on_udp_recv_param{
+					User_data:  uintptr(param.userdata),
+					Sock:       RDPSOCKET(param.sock),
+					Addr:       addr,
+					Buf:        C.GoBytes(unsafe.Pointer(param.buf), C.int(param.buf_len)) ,
+				}
 
-			starup_param.On_udp_recv(&p)
+				s.On_udp_recv(&p)
+			}
 		}
 	}
+	mutex_lock.Unlock()
 }
 
 //export on_hash_addr

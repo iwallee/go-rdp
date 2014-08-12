@@ -11,6 +11,7 @@ const (
 	op_disconn = 1
 	op_recv    = 2
 )
+
 func On_connect(param *RDP_on_connect_param) {
 
 }
@@ -48,6 +49,8 @@ func On_recv(param *RDP_on_recv_param) {
 	}
 	copy(wd.data, param.Buf)
 	work_channel <- wd
+
+	//log.Println("on_recv")
 }
 func On_send(param *RDP_on_send_param) {
 
@@ -74,30 +77,26 @@ func workProc() {
 		w := <-work_channel
 		if w.operation == op_accept {
 			log.Println("on_accept")
-		} else if w.operation == op_disconn{
+		} else if w.operation == op_disconn {
 			log.Println("on_disconn")
 		} else if w.operation == op_recv {
 			//log.Println("on_recv")
 		}
 	}
+
 }
 
+var startup_param RDP_startup_param
 
 func TestRun(t *testing.T) {
+	return
 	log.Println("rdp server start")
 
-	var startup_param RDP_startup_param
 
 	startup_param.Max_sock = 1
-	startup_param.Recv_thread_num = 1
+	startup_param.Recv_thread_num = 0 //线程数必需为0,以便使用同步接收.使用后台线程接收数据会导致golang系统句柄大量泄漏
 	startup_param.Recv_buf_size = 1024*4
-	startup_param.On_connect = On_connect
-	startup_param.On_before_accept = On_before_accept
-	startup_param.On_accept = On_accept
-	startup_param.On_disconnect = On_disconnect
-	startup_param.On_recv = On_recv
-	//startup_param.On_send = On_send
-	//startup_param.On_udp_recv = On_udp_recv
+
 	//startup_param.On_hash_addr = On_hash_addr
 
 
@@ -114,6 +113,13 @@ func TestRun(t *testing.T) {
 	socket_param.Max_send_queue_size = 0
 	socket_param.Max_recv_queue_size = 0
 	socket_param.In_session_hash_size = 1024
+	socket_param.On_connect = On_connect
+	socket_param.On_before_accept = On_before_accept
+	socket_param.On_accept = On_accept
+	socket_param.On_disconnect = On_disconnect
+	socket_param.On_recv = On_recv
+	//socket_param.On_send = On_send
+	//socket_param.On_udp_recv = On_udp_recv
 
 
 
@@ -143,7 +149,12 @@ func TestRun(t *testing.T) {
 	log.Println("rdp server on ", addr.IP, ":", addr.Port)
 
 	work_channel = make(chan workChannelData, 1)
-	workProc()
+	go workProc()
+
+	for {
+		//c函数多线程中回调时,会造成系统windows系统句柄大量泄漏,因此,需要在主线程使用同步接收接口
+		RDP_socket_recv(-1)
+	}
 
 	n = RDP_socket_close(sock);
 	if n < 0 {

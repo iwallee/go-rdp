@@ -18,6 +18,7 @@ var (
 	_getsyserror       = rdpDll.NewProc("rdp_getsyserror")
 	_getsyserrordesc   = rdpDll.NewProc("rdp_getsyserrordesc")
 
+
 	_socket_create           = rdpDll.NewProc("rdp_socket_create")
 	_socket_get_create_param = rdpDll.NewProc("rdp_socket_get_create_param")
 	_socket_get_state        = rdpDll.NewProc("rdp_socket_get_state")
@@ -25,6 +26,7 @@ var (
 	_socket_bind             = rdpDll.NewProc("rdp_socket_bind")
 	_socket_listen           = rdpDll.NewProc("rdp_socket_listen")
 	_socket_connect          = rdpDll.NewProc("rdp_socket_connect")
+	_socket_recv             = rdpDll.NewProc("rdp_socket_recv")
 
 	_session_close      = rdpDll.NewProc("rdp_session_close")
 	_session_get_state  = rdpDll.NewProc("rdp_session_get_state")

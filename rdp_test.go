@@ -83,16 +83,13 @@ func workProc() {
 			//log.Println("on_recv")
 		}
 	}
-
 }
 
-var startup_param RDP_startup_param
 
 func TestRun(t *testing.T) {
-	return
 	log.Println("rdp server start")
 
-
+	var startup_param RDP_startup_param
 	startup_param.Max_sock = 1
 	startup_param.Recv_thread_num = 0 //线程数必需为0,以便使用同步接收.使用后台线程接收数据会导致golang系统句柄大量泄漏
 	startup_param.Recv_buf_size = 1024*4
@@ -120,8 +117,6 @@ func TestRun(t *testing.T) {
 	socket_param.On_recv = On_recv
 	//socket_param.On_send = On_send
 	//socket_param.On_udp_recv = On_udp_recv
-
-
 
 	var sock RDPSOCKET
 	sock, n = RDP_socket_create(&socket_param)

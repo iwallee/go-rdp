@@ -73,11 +73,11 @@ func workProc() {
 	for {
 		w := <-work_channel
 		if w.operation == op_accept {
-
+			log.Println("on_accept")
 		} else if w.operation == op_disconn{
-
+			log.Println("on_disconn")
 		} else if w.operation == op_recv {
-
+			//log.Println("on_recv")
 		}
 	}
 }
